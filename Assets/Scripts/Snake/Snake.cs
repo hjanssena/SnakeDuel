@@ -4,7 +4,9 @@ public class Snake : MonoBehaviour
 {
     public enum Direction { up, down, left, right };
     public Direction currentDir { get; set; }
-    public SnakeNode head { get; set; }
+    public GameObject head { get; set; }
+    [SerializeField]
+    public GameObject snakeNode;
 
     void Start()
     {
@@ -24,12 +26,13 @@ public class Snake : MonoBehaviour
     }
     void move()
     {
-        if((Vector2)head.transform.position == head.wantedPosition)
+        SnakeNode headScript = head.GetComponent<SnakeNode>();
+        if((Vector2)head.transform.position == headScript.wantedPosition)
         {
             updateDirection();
-            head.wantedPosition = getNextPosition();
+            headScript.wantedPosition = getNextPosition();
         }
-        head.transform.position = Vector2.MoveTowards(head.transform.position, head.wantedPosition, head.speed);
+        head.transform.position = Vector2.MoveTowards(head.transform.position, headScript.wantedPosition, headScript.speed);
     }
 
     void updateDirection()
@@ -77,20 +80,21 @@ public class Snake : MonoBehaviour
     {
         if (head == null)
         {
-            head = new SnakeNode(null);
+            GameObject section = Instantiate(snakeNode);
+            head = section;
             head.transform.position = position;
         }
         else
         {
             SnakeNode last = getLastNode();
             last.next = new SnakeNode(last);
-            last.next.transform.position = position;
+            last.next.gameObject.transform.position = position;
         }
     }
 
     SnakeNode getLastNode()
     {
-        SnakeNode current = head;
+        SnakeNode current = head.GetComponent<SnakeNode>();
         while(current.next != null)
         {
             current = current.next;
