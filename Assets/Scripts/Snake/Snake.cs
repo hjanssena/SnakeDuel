@@ -1,38 +1,40 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Snake : MonoBehaviour
 {
     public enum Direction { up, down, left, right };
     public Direction currentDir { get; set; }
-    public GameObject head { get; set; }
+    public LinkedList<GameObject> nodes;
     [SerializeField]
     public GameObject snakeNode;
 
     void Start()
     {
-        initSnake();   
+        initSnake();
     }
 
     void Update()
     {
+        updateDirection();
         move();
     }
 
     void initSnake()
     {
+        nodes = new LinkedList<GameObject>();
         AddSection(transform.position);
         AddSection(new Vector2(transform.position.x, transform.position.y - 1));
         AddSection(new Vector2(transform.position.x, transform.position.y - 2));
     }
     void move()
     {
-        SnakeNode headScript = head.GetComponent<SnakeNode>();
-        if((Vector2)head.transform.position == headScript.wantedPosition)
+        SnakeNode headScript = nodes.First.Value.GetComponent<SnakeNode>();
+        if ((Vector2)nodes.First.Value.transform.position == headScript.wantedPosition)
         {
-            updateDirection();
-            headScript.wantedPosition = getNextPosition();
+            UpdateAllNodeHeadings();
         }
-        head.transform.position = Vector2.MoveTowards(head.transform.position, headScript.wantedPosition, headScript.speed);
+        //nodes.First.Value.transform.position = Vector2.MoveTowards(nodes.First.Value.transform.position, headScript.wantedPosition, headScript.speed);
     }
 
     void updateDirection()
@@ -41,7 +43,7 @@ public class Snake : MonoBehaviour
         {
             currentDir = Direction.up;
         }
-        else if(Input.GetKey(KeyCode.DownArrow))
+        else if (Input.GetKey(KeyCode.DownArrow))
         {
             currentDir = Direction.down;
         }
@@ -55,7 +57,7 @@ public class Snake : MonoBehaviour
         }
     }
 
-    Vector2 getNextPosition()
+    Vector2 getNextHeading()
     {
         Vector2 next = new Vector2(transform.position.x, transform.position.y);
         switch (currentDir)
@@ -78,27 +80,19 @@ public class Snake : MonoBehaviour
 
     void AddSection(Vector2 position)
     {
-        if (head == null)
-        {
-            GameObject section = Instantiate(snakeNode);
-            head = section;
-            head.transform.position = position;
-        }
-        else
-        {
-            SnakeNode last = getLastNode();
-            last.next = new SnakeNode(last);
-            last.next.gameObject.transform.position = position;
-        }
+        GameObject section = Instantiate(snakeNode);
+        section.transform.position = position;
+        nodes.AddLast(section);
     }
 
-    SnakeNode getLastNode()
+    void UpdateAllNodeHeadings()
     {
-        SnakeNode current = head.GetComponent<SnakeNode>();
-        while(current.next != null)
+        nodes.First.Value.GetComponent<SnakeNode>().wantedPosition = getNextHeading();
+        LinkedListNode<GameObject> current = nodes.First.Next;
+        while (current != null)
         {
-            current = current.next;
+            current.Value.GetComponent<SnakeNode>().wantedPosition = current.Previous.Value.GetComponent<SnakeNode>().transform.position;
+            current = current.Next;
         }
-        return current;
     }
 }
