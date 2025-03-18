@@ -1,18 +1,20 @@
 using UnityEngine;
 using System.Collections;
+using Unity.Netcode;
 
-public class Snake : MonoBehaviour
+public class Snake : NetworkBehaviour
 {
     public enum Direction { up, down, left, right };
-    public Direction currentDir { get; set; }
+    public NetworkVariable<Direction> currentDir = new NetworkVariable<Direction>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public SnakeNode head;
     [SerializeField]
     public GameObject snakeNode;
     bool dead;
 
-    void Start()
+    public override void OnNetworkSpawn()
     {
-        initSnake();
+        if(IsOwner)
+            initSnake();
     }
 
     void Update()
@@ -21,18 +23,20 @@ public class Snake : MonoBehaviour
         {
             move();
             EatFood();
-            updateDirection();
+            if (IsOwner)
+            {
+                updateDirection();
+            }
             CheckCollision();
         }
     }
 
     void initSnake()
     {
-        AddSection(transform.position);
-        AddSection(new Vector2(transform.position.x, transform.position.y - 1));
-        AddSection(new Vector2(transform.position.x, transform.position.y - 2));
+        AddSectionRpc(transform.position);
+        AddSectionRpc(new Vector2(transform.position.x, transform.position.y - 1));
+        AddSectionRpc(new Vector2(transform.position.x, transform.position.y - 2));
         dead = false;
-        currentDir = Direction.up;
     }
 
     void move()
@@ -49,29 +53,29 @@ public class Snake : MonoBehaviour
         if (Input.GetKey(KeyCode.UpArrow))
         {
             if (direction != Direction.down)
-                currentDir = Direction.up;
+                currentDir.Value = Direction.up;
         }
         else if (Input.GetKey(KeyCode.DownArrow))
         {
             if (direction != Direction.up)
-                currentDir = Direction.down;
+                currentDir.Value = Direction.down;
         }
         else if (Input.GetKey(KeyCode.LeftArrow))
         {
             if (direction != Direction.right)
-                currentDir = Direction.left;
+                currentDir.Value = Direction.left;
         }
         else if (Input.GetKey(KeyCode.RightArrow))
         {
             if (direction != Direction.left)
-                currentDir = Direction.right;
+                currentDir.Value = Direction.right;
         }
     }
 
     Vector2 getNextHeading()
     {
         Vector2 next = new Vector2(head.gameObject.transform.position.x, head.gameObject.transform.position.y);
-        switch (currentDir)
+        switch (currentDir.Value)
         {
             case Direction.up:
                 next.y += 1;
@@ -146,16 +150,18 @@ public class Snake : MonoBehaviour
         if (isFood)
         {
             isFood.collider.gameObject.SetActive(false);
-            AddSection(GetLastNode().gameObject.transform.position);
+            AddSectionRpc(GetLastNode().gameObject.transform.position);
         }
     }
 
-    void AddSection(Vector2 position)
+    [Rpc(SendTo.Server)]
+    void AddSectionRpc(Vector2 position)
     {
         GameObject newNode = Instantiate(snakeNode);
         newNode.transform.position = position;
         SnakeNode newNodeScript = newNode.GetComponent<SnakeNode>();
-        newNodeScript.owner = this;
+        NetworkObject newNodeNetworkObject = newNode.GetComponent<NetworkObject>();
+        newNodeNetworkObject.Spawn();
         if (head == null)
         {
             head = newNodeScript;

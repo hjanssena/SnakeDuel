@@ -1,13 +1,13 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class SnakeNode : MonoBehaviour
+public class SnakeNode : NetworkBehaviour
 {
     public Vector2 heading { get; set; }
     [SerializeField]
     public float speed;
     public SnakeNode previous { get; set; }
     public SnakeNode next { get; set; }
-    public Snake owner { get; set; }
 
     void Update()
     {
