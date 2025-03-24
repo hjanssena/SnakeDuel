@@ -5,37 +5,40 @@ using Unity.Netcode;
 public class Snake : NetworkBehaviour
 {
     public enum Direction { up, down, left, right };
-    public NetworkVariable<Direction> currentDir = new NetworkVariable<Direction>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public Direction currentDir;
+    public Direction lastDir;
     public SnakeNode head;
     [SerializeField]
     public GameObject snakeNode;
     bool dead;
+    PlayerSnake player;
 
     public override void OnNetworkSpawn()
     {
-        if(IsOwner)
+        if(IsServer)
             initSnake();
     }
 
     void Update()
     {
-        if (!dead)
+        if (!dead && IsServer)
         {
             move();
             EatFood();
-            if (IsOwner)
-            {
-                updateDirection();
-            }
             CheckCollision();
         }
     }
 
+    public void setPlayer(PlayerSnake player)
+    {
+        this.player = player;
+    }
+    
     void initSnake()
     {
-        AddSectionRpc(transform.position);
-        AddSectionRpc(new Vector2(transform.position.x, transform.position.y - 1));
-        AddSectionRpc(new Vector2(transform.position.x, transform.position.y - 2));
+        AddSection(transform.position);
+        AddSection(new Vector2(transform.position.x, transform.position.y - 1));
+        AddSection(new Vector2(transform.position.x, transform.position.y - 2));
         dead = false;
     }
 
@@ -43,39 +46,70 @@ public class Snake : NetworkBehaviour
     {
         if ((Vector2)head.gameObject.transform.position == head.heading)
         {
-            UpdateHeadings();
+            updateDirection();
+            UpdateNodeHeadings();
+        }
+    }
+
+
+    void UpdateNodeHeadings()
+    {
+        Vector2 newHeading = head.heading;
+        head.heading = getNextHeading();
+        SnakeNode current = head.next;
+        while (current != null)
+        {
+            Vector2 temp = current.heading;
+            current.heading = newHeading;
+            newHeading = temp;
+            current = current.next;
         }
     }
 
     void updateDirection()
     {
-        Direction direction = getCurrentHeading();
-        if (Input.GetKey(KeyCode.UpArrow))
+        Direction currentHeading = getCurrentHeading();
+        Direction playerDir = player.currentDir.Value;
+        if (playerDir == Direction.up)
         {
-            if (direction != Direction.down)
-                currentDir.Value = Direction.up;
+            if (currentDir != Direction.down)
+            {
+                lastDir = currentDir;
+                currentDir = Direction.up;
+            }
         }
-        else if (Input.GetKey(KeyCode.DownArrow))
+        else if (playerDir == Direction.down)
         {
-            if (direction != Direction.up)
-                currentDir.Value = Direction.down;
+            Direction h = getCurrentHeading();
+            if (currentDir != Direction.up)
+            {
+                lastDir = currentDir;
+                currentDir = Direction.down;
+            }
+
         }
-        else if (Input.GetKey(KeyCode.LeftArrow))
+        else if (playerDir == Direction.left)
         {
-            if (direction != Direction.right)
-                currentDir.Value = Direction.left;
+            if (currentDir != Direction.right)
+            {
+                lastDir = currentDir;
+                currentDir = Direction.left;
+            }
         }
-        else if (Input.GetKey(KeyCode.RightArrow))
+        else if (playerDir == Direction.right)
         {
-            if (direction != Direction.left)
-                currentDir.Value = Direction.right;
+            if (currentDir != Direction.left)
+            {
+                lastDir = currentDir;
+                currentDir = Direction.right;
+            }
         }
     }
 
     Vector2 getNextHeading()
     {
         Vector2 next = new Vector2(head.gameObject.transform.position.x, head.gameObject.transform.position.y);
-        switch (currentDir.Value)
+        switch (currentDir)
         {
             case Direction.up:
                 next.y += 1;
@@ -149,13 +183,12 @@ public class Snake : NetworkBehaviour
         }
         if (isFood)
         {
-            isFood.collider.gameObject.SetActive(false);
-            AddSectionRpc(GetLastNode().gameObject.transform.position);
+            isFood.collider.gameObject.GetComponent<Food>().Despawn();
+            AddSection(GetLastNode().gameObject.transform.position);
         }
     }
 
-    [Rpc(SendTo.Server)]
-    void AddSectionRpc(Vector2 position)
+    void AddSection(Vector2 position)
     {
         GameObject newNode = Instantiate(snakeNode);
         newNode.transform.position = position;
@@ -199,19 +232,6 @@ public class Snake : NetworkBehaviour
         return current;
     }
 
-    void UpdateHeadings()
-    {
-        Vector2 newHeading = head.heading;
-        head.heading = getNextHeading();
-        SnakeNode current = head.next;
-        while (current != null)
-        {
-            Vector2 temp = current.heading;
-            current.heading = newHeading;
-            newHeading = temp;
-            current = current.next;
-        }
-    }
 
     Direction getCurrentHeading()
     {

@@ -11,7 +11,8 @@ public class SnakeNode : NetworkBehaviour
 
     void Update()
     {
-        move();
+        if(IsServer)
+            move();
     }
 
     void move()
@@ -42,6 +43,7 @@ public class SnakeNode : NetworkBehaviour
 
     public void KillNode()
     {
+        GetComponent<NetworkObject>().Despawn();
         Destroy(gameObject);
     }
 }
