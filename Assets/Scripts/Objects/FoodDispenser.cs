@@ -26,11 +26,8 @@ public class FoodDispenser : NetworkBehaviour
 
     void SpawnFood()
     {
-        GameObject newFood = Instantiate(food, new Vector2(Random.Range(-13, 5), Random.Range(-9, 9)), Quaternion.identity);
+        GameObject newFood = Instantiate(food, new Vector2(Random.Range(-12, 4), Random.Range(-8, 8)), Quaternion.identity);
         NetworkObject netFood = newFood.GetComponent<NetworkObject>();
         netFood.Spawn();
     }
-
-    //x: -13 -> 5
-    //y: -9 -> 9
 }

@@ -70,6 +70,7 @@ public class Snake : NetworkBehaviour
     {
         Direction currentHeading = getCurrentHeading();
         Direction playerDir = player.currentDir.Value;
+
         if (playerDir == Direction.up)
         {
             if (currentDir != Direction.down)
@@ -80,7 +81,6 @@ public class Snake : NetworkBehaviour
         }
         else if (playerDir == Direction.down)
         {
-            Direction h = getCurrentHeading();
             if (currentDir != Direction.up)
             {
                 lastDir = currentDir;
@@ -231,7 +231,6 @@ public class Snake : NetworkBehaviour
         }
         return current;
     }
-
 
     Direction getCurrentHeading()
     {
