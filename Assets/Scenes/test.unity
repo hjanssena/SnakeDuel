@@ -1885,8 +1885,8 @@ MonoBehaviour:
   serverBtn: {fileID: 997104548}
   hostBtn: {fileID: 1299181515}
   clientBtn: {fileID: 532127325}
-  ipLabel: {fileID: 0}
-  portLabel: {fileID: 0}
+  ipField: {fileID: 2119332214}
+  portField: {fileID: 576517091}
 --- !u!1 &1299181513
 GameObject:
   m_ObjectHideFlags: 0
